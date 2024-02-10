@@ -1,5 +1,7 @@
 package fr.leblanc.cemantixsolver;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,24 +11,17 @@ public class CemantixSolver {
 
 	private Map<String, Double> scoreCache = new HashMap<>();
 
-	private ScoreService scoreService = new ScoreService();
+	private CemantixScoreService scoreService = new CemantixScoreService();
 	private LexicalFieldService lexicalFieldService = new LexicalFieldService();
 
-	private static final List<String> ROOT_WORDS = List.of("objet", "ciel", "terre", "sentiment", "pensée", "travail",
+	private static final List<String> ROOT_WORDS = Arrays.asList("objet", "ciel", "terre", "sentiment", "pensée", "travail",
 			"espace", "santé", "pays", "triste", "histoire", "humain", "vision", "politique");
-
-	public static void main(String[] args) {
-		long start = System.currentTimeMillis();
-		CemantixSolver cemantixSolver = new CemantixSolver();
-		cemantixSolver.solve();
-		System.out.println("total time = " + (double) (System.currentTimeMillis() - start) / 1000 + " s");
-	}
 
 	public void solve() {
 
 		double bestScore = Double.NEGATIVE_INFINITY;
 
-		List<String> sample = ROOT_WORDS;
+		List<String> sample = new ArrayList<>(ROOT_WORDS);
 
 		String bestWord = null;
 
@@ -34,7 +29,7 @@ public class CemantixSolver {
 			bestWord = getBestWord(sample);
 			if (bestWord != null) {
 				Double score = scoreCache.get(bestWord);
-				if (score > bestScore) {
+				if (score != null && score > bestScore) {
 					bestScore = score;
 					System.err.println(bestWord + " => " + score);
 				} else {

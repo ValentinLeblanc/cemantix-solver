@@ -10,7 +10,7 @@ import java.util.Map;
 
 import org.json.JSONObject;
 
-public class ScoreService {
+public class CemantixScoreService {
 	
     private static final String CEMANTIX_URL = "https://cemantix.certitudes.org/score";
 
