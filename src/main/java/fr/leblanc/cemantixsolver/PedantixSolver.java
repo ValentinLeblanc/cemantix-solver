@@ -71,7 +71,7 @@ public class PedantixSolver {
 			if (score > bestScore) {
 				bestScore = score;
 			}
-			List<String> newSsample = lexicalFieldService.getSimilarWords(bestWord);
+			List<String> newSsample = lexicalFieldService.getLexicalField(bestWord);
 			if (newSsample.isEmpty()) {
 				sample.remove(bestWord);
 			} else {

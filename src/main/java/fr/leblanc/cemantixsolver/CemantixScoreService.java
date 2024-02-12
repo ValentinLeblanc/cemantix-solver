@@ -2,20 +2,43 @@ package fr.leblanc.cemantixsolver;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 public class CemantixScoreService {
 	
     private static final String CEMANTIX_URL = "https://cemantix.certitudes.org/score";
-
-	public double getScore(String word, Map<String, Double> scoreCache) {
+    
+    private boolean isTest;
+    
+    private JSONObject scores = parseScores();
+    
+	public double getScore(String word, String date) {
     	
+		if (!scores.has(date)) {
+			scores.put(date, new JSONObject());
+		}		
+		
+		if (isTest || scores.getJSONObject(date).has(word)) {
+			try {
+				return scores.getJSONObject(date).getDouble(word);
+			} catch (JSONException e) {
+				return 0d;
+			}
+		}
+		
 		try {
 			System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
 			
@@ -50,7 +73,8 @@ public class CemantixScoreService {
 			JSONObject res = new JSONObject(response.toString());
 			
 			double score = res.getDouble("score");
-			scoreCache.put(word, score);
+			
+			scores.getJSONObject(date).put(word, score);
 			
 			return score;
 			
@@ -59,4 +83,26 @@ public class CemantixScoreService {
 		}
         
     }
+
+	private JSONObject parseScores() {
+		JSONObject json = new JSONObject();
+		try (InputStream inputStream = new FileInputStream("scores.json")) {
+			json = new JSONObject(new JSONTokener(inputStream));
+		} catch (IOException ignored) {
+			// ignore
+		}
+		return json;
+	}
+
+	public void storeScores() {
+        try (Writer writer = new OutputStreamWriter(new FileOutputStream("scores.json"), StandardCharsets.UTF_8)) {
+        	writer.write(scores.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+	}
+
+	public void setTest(boolean isTest) {
+		this.isTest = isTest;
+	}
 }
