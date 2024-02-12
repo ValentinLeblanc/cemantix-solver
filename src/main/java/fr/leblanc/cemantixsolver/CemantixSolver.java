@@ -44,33 +44,35 @@ public class CemantixSolver {
 
 		String bestWord = null;
 
-		while (bestScore != 1.0) {
-			lexicalField.removeIf(visitedBestWords::contains);
-			bestWord = getBestWord(lexicalField);
-			if (bestWord != null) {
-				visitedBestWords.add(bestWord);
-				Double score = scoreService.getScore(bestWord, date);
-				if (score != null && score > bestScore) {
-					bestScore = score;
-					if (!isTest) {
-						System.err.println(bestWord + " => " + score);
+		try {
+			while (bestScore != 1.0) {
+				lexicalField.removeIf(visitedBestWords::contains);
+				bestWord = getBestWord(lexicalField);
+				if (bestWord != null) {
+					visitedBestWords.add(bestWord);
+					Double score = scoreService.getScore(bestWord, date);
+					if (score != null && score > bestScore) {
+						bestScore = score;
+						if (!isTest) {
+							System.err.println(bestWord + " => " + score);
+						}
+					} else {
+						if (!isTest) {
+							System.out.println(bestWord + " => " + score);
+						}
 					}
-				} else {
-					if (!isTest) {
-						System.out.println(bestWord + " => " + score);
+					lexicalField = lexicalFieldService.getLexicalField(bestWord);
+					similarWordsMap.put(bestWord, lexicalField);
+					if (bestScore == 1.0) {
+						return bestWord;
 					}
-				}
-				lexicalField = lexicalFieldService.getLexicalField(bestWord);
-				similarWordsMap.put(bestWord, lexicalField);
-				if (bestScore == 1.0) {
-					return bestWord;
 				}
 			}
-		}
-		
-		if (!isTest) {
-			lexicalFieldService.storeLexicalFields();
-			scoreService.storeScores();
+		} finally {
+			if (!isTest) {
+				lexicalFieldService.storeLexicalFields();
+				scoreService.storeScores();
+			}
 		}
 
 		throw new IllegalStateException("word not found");
