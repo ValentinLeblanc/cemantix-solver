@@ -1,19 +1,12 @@
 package fr.leblanc.cemantixsolver;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONObject;
-import org.json.JSONTokener;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -26,21 +19,17 @@ import org.springframework.web.client.RestTemplate;
 
 public class LexicalFieldService {
 
-	private static final String LEXICAL_FIELD_URL = "https://www.rimessolides.com/motscles.aspx?m=";
+	private static final String LEXICAL_FIELDS_JSON = "lexical_fields.json";
 
-	private boolean isTest;
-	
+	private static final String LEXICAL_FIELDS_URL = "https://www.rimessolides.com/motscles.aspx?m=";
+
 	private RestTemplate restTemplate = new RestTemplate();
 	
-	private JSONObject lexicalFields = parseLexicalFields();
+	private JSONObject lexicalFields = ResourceHelper.parseJSON(LEXICAL_FIELDS_JSON);
 	
-	public void setTest(boolean isTest) {
-		this.isTest = isTest;
-	}
-
 	public List<String> getLexicalField(String word) {
 		
-		if (isTest || lexicalFields.has(word)) {
+		if (lexicalFields.has(word)) {
 			return new ArrayList<>(lexicalFields.getJSONArray(word).toList().stream().map(Object::toString).toList());
 		}
 		
@@ -49,7 +38,7 @@ public class LexicalFieldService {
 
 		HttpEntity<String> entity = new HttpEntity<>(headers);
 
-		ResponseEntity<String> response = restTemplate.exchange(LEXICAL_FIELD_URL + encodeWord(word), HttpMethod.GET,
+		ResponseEntity<String> response = restTemplate.exchange(LEXICAL_FIELDS_URL + encodeWord(word), HttpMethod.GET,
 				entity, String.class);
 
 		List<String> lexicalField = extractWords(response.getBody());
@@ -57,16 +46,6 @@ public class LexicalFieldService {
 		lexicalFields.put(word, lexicalField);
 		
 		return lexicalField;
-	}
-
-	private JSONObject parseLexicalFields() {
-		JSONObject json = new JSONObject();
-        try (InputStream inputStream = new FileInputStream("lexical_fields.json")) {
-            json = new JSONObject(new JSONTokener(inputStream));
-        } catch (IOException ignored) {
-        	// ignore
-        }
-		return json;
 	}
 
 	private String encodeWord(String word) {
@@ -98,11 +77,7 @@ public class LexicalFieldService {
 	}
 
 	public void storeLexicalFields() {
-        try (Writer writer = new OutputStreamWriter(new FileOutputStream("lexical_fields.json"), StandardCharsets.UTF_8)) {
-        	writer.write(lexicalFields.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+		ResourceHelper.storeJSON(lexicalFields, LEXICAL_FIELDS_JSON);
 	}
 
 }

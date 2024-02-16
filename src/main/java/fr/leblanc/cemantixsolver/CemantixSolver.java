@@ -2,85 +2,62 @@ package fr.leblanc.cemantixsolver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 public class CemantixSolver {
 
-	private CemantixScoreService scoreService = new CemantixScoreService();
-	private LexicalFieldService lexicalFieldService = new LexicalFieldService();
+	private static final double TARGET_SCORE = 1.0;
+	private CemantixScoreService scoreService;
+	private LexicalFieldService lexicalFieldService;
 
-	private String date;
-	
-	private boolean isTest = false;
-	
 	private static final List<String> ROOT_WORDS = Arrays.asList("objet", "ciel", "terre", "sentiment", "pensée", "travail",
 			"espace", "santé", "pays", "triste", "histoire", "humain", "vision", "politique");
 
-	public void setDate(String date) {
-		this.date = date;
+	public CemantixSolver(String date) {
+		this.scoreService = new CemantixScoreService(date);
+		this.lexicalFieldService = new LexicalFieldService();
 	}
-	
-	public void setTest(boolean isTest) {
-		this.isTest = isTest;
-	}
-	
+
 	public String solve() {
 		
-		scoreService.setTest(isTest);
-		lexicalFieldService.setTest(isTest);
-		
-		Map<String, List<String>> similarWordsMap = new HashMap<>();
-		
-		Set<String> visitedBestWords = new HashSet<>();
-				
-		double bestScore = Double.NEGATIVE_INFINITY;
-
-		List<String> lexicalField = new ArrayList<>(ROOT_WORDS);
+		double currentBestScore = Double.NEGATIVE_INFINITY;
+		Set<String> visitedWords = new HashSet<>();
+		List<String> nextWords = new ArrayList<>(ROOT_WORDS);
 
 		String bestWord = null;
 
-		try {
-			while (bestScore != 1.0) {
-				lexicalField.removeIf(visitedBestWords::contains);
-				bestWord = getBestWord(lexicalField);
-				if (bestWord != null) {
-					visitedBestWords.add(bestWord);
-					Double score = scoreService.getScore(bestWord, date);
-					if (score != null && score > bestScore) {
-						bestScore = score;
-						if (!isTest) {
-							System.err.println(bestWord + " => " + score);
-						}
-					} else {
-						if (!isTest) {
-							System.out.println(bestWord + " => " + score);
-						}
-					}
-					lexicalField = lexicalFieldService.getLexicalField(bestWord);
-					similarWordsMap.put(bestWord, lexicalField);
-					if (bestScore == 1.0) {
+		while (currentBestScore != TARGET_SCORE) {
+			nextWords.removeIf(visitedWords::contains);
+			bestWord = getBestWord(nextWords);
+			if (bestWord != null) {
+				visitedWords.add(bestWord);
+				Double score = scoreService.getScore(bestWord);
+				if (score != null) {
+					if (score == TARGET_SCORE) {
 						return bestWord;
 					}
+					if (score > currentBestScore) {
+						currentBestScore = score;
+					}
 				}
-			}
-		} finally {
-			if (!isTest) {
-				lexicalFieldService.storeLexicalFields();
-				scoreService.storeScores();
+				nextWords = lexicalFieldService.getLexicalField(bestWord);
 			}
 		}
-
+		
 		throw new IllegalStateException("word not found");
 	}
 	
 	private String getBestWord(List<String> sample) {
-		Optional<String> max = sample.stream().parallel().max((w1, w2) -> Double.compare(scoreService.getScore(w1, date), scoreService.getScore(w2, date)));
+		Optional<String> max = sample.stream().parallel().max((w1, w2) -> Double.compare(scoreService.getScore(w1), scoreService.getScore(w2)));
 		return max.orElse(null);
+	}
+
+	public void storeResults() {
+		lexicalFieldService.storeLexicalFields();
+		scoreService.storeScores();
 	}
 
 }
