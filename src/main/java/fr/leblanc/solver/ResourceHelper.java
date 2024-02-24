@@ -1,4 +1,4 @@
-package fr.leblanc.cemantixsolver;
+package fr.leblanc.solver;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

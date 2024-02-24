@@ -1,4 +1,4 @@
-package fr.leblanc.cemantixsolver;
+package fr.leblanc.solver;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -29,8 +29,10 @@ public class LexicalFieldService {
 	
 	public List<String> getLexicalField(String word) {
 		
-		if (lexicalFields.has(word)) {
-			return new ArrayList<>(lexicalFields.getJSONArray(word).toList().stream().map(Object::toString).toList());
+		synchronized (lexicalFields) {
+			if (lexicalFields.has(word)) {
+				return new ArrayList<>(lexicalFields.getJSONArray(word).toList().stream().map(Object::toString).toList());
+			}
 		}
 		
 		HttpHeaders headers = new HttpHeaders();
@@ -43,7 +45,10 @@ public class LexicalFieldService {
 
 		List<String> lexicalField = extractWords(response.getBody());
 		
-		lexicalFields.put(word, lexicalField);
+		synchronized (lexicalFields) {
+			lexicalFields.put(word, lexicalField);
+			ResourceHelper.storeJSON(lexicalFields, LEXICAL_FIELDS_JSON);
+		}
 		
 		return lexicalField;
 	}
@@ -74,10 +79,6 @@ public class LexicalFieldService {
 			words.add(text.replace(",", ""));
 		}
 		return words;
-	}
-
-	public void storeLexicalFields() {
-		ResourceHelper.storeJSON(lexicalFields, LEXICAL_FIELDS_JSON);
 	}
 
 }

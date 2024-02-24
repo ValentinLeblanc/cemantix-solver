@@ -1,4 +1,4 @@
-package fr.leblanc.cemantixsolver;
+package fr.leblanc.solver.cemantix;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
+import fr.leblanc.solver.LexicalFieldService;
 
 public class CemantixSolver {
 
@@ -53,11 +55,6 @@ public class CemantixSolver {
 	private String getBestWord(List<String> sample) {
 		Optional<String> max = sample.stream().parallel().max((w1, w2) -> Double.compare(scoreService.getScore(w1), scoreService.getScore(w2)));
 		return max.orElse(null);
-	}
-
-	public void storeResults() {
-		lexicalFieldService.storeLexicalFields();
-		scoreService.storeScores();
 	}
 
 }

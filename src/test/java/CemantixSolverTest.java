@@ -3,9 +3,9 @@ import static org.junit.Assert.assertNotNull;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 
-import fr.leblanc.cemantixsolver.CemantixScoreService;
-import fr.leblanc.cemantixsolver.CemantixSolver;
-import fr.leblanc.cemantixsolver.ResourceHelper;
+import fr.leblanc.solver.ResourceHelper;
+import fr.leblanc.solver.cemantix.CemantixScoreService;
+import fr.leblanc.solver.cemantix.CemantixSolver;
 
 class CemantixSolverTest {
 

@@ -1,4 +1,4 @@
-package fr.leblanc.cemantixsolver;
+package fr.leblanc.solver.cemantix;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import fr.leblanc.solver.ResourceHelper;
 
 public class CemantixScoreService {
 	
@@ -26,15 +28,17 @@ public class CemantixScoreService {
 
 	public double getScore(String word) {
     	
-		if (!scores.has(date)) {
-			scores.put(date, new JSONObject());
-		}		
-		
-		if (scores.getJSONObject(date).has(word)) {
-			try {
-				return scores.getJSONObject(date).getDouble(word);
-			} catch (JSONException e) {
-				return 0d;
+		synchronized (scores) {
+			if (!scores.has(date)) {
+				scores.put(date, new JSONObject());
+			}		
+			
+			if (scores.getJSONObject(date).has(word)) {
+				try {
+					return scores.getJSONObject(date).getDouble(word);
+				} catch (JSONException e) {
+					return 0d;
+				}
 			}
 		}
 		
@@ -73,7 +77,10 @@ public class CemantixScoreService {
 			
 			double score = res.getDouble("score");
 			
-			scores.getJSONObject(date).put(word, score);
+			synchronized (scores) {
+				scores.getJSONObject(date).put(word, score);
+				ResourceHelper.storeJSON(scores, SCORES_JSON);
+			}
 			
 			return score;
 			
@@ -82,9 +89,5 @@ public class CemantixScoreService {
 		}
         
     }
-
-	public void storeScores() {
-		ResourceHelper.storeJSON(scores, SCORES_JSON);
-	}
 
 }

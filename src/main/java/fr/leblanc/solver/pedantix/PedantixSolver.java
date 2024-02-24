@@ -1,18 +1,18 @@
-package fr.leblanc.cemantixsolver;
+package fr.leblanc.solver.pedantix;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+
+import fr.leblanc.solver.LexicalFieldService;
 
 public class PedantixSolver {
 
-	private PedantixScoreService scoreService = new PedantixScoreService();
-	private LexicalFieldService lexicalFieldService = new LexicalFieldService();
+	private PedantixScoreService scoreService;
+	private LexicalFieldService lexicalFieldService;
 
-	public static final double SCORE_TARGET = 1000d;
+	public static final double TARGET_SCORE = 1000d;
 
     private static final List<String> ROOT_WORDS = Arrays.asList(
             "le", "temps", "vie", "espace", "personne", "endroit", "chose", "jour", "nuit", "année", "mois",
@@ -44,64 +44,69 @@ public class PedantixSolver {
             "nous", "vous", "ils", "elles", "tout", "tous", "toute", "toutes", "quel", "quelle",
             "quels", "quelles", "ce", "cet", "cette", "ces", "aucun", "aucune", "chaque", "plusieurs", "certains",
             "certaines", "autre", "autres", "même", "pareil", "tel", "telle", "tels", "telles", "autant",
-            "toutefois", "néanmoins", "cependant", "malgré", "aussi", "donc", "parce que", "puisque", "car", "en effet"
+            "toutefois", "néanmoins", "cependant", "malgré", "aussi", "donc", "parce que", "puisque", "car", "en effet", "par", "depuis", "être", "avoir"
         );
     
-	public void solve(String targetKey) {
-
-		Map<String, Double> scoreCache = new HashMap<>();
+    public PedantixSolver(String date) {
+    	this.scoreService = new PedantixScoreService(date);
+    	this.lexicalFieldService = new LexicalFieldService();
+    }
+    
+	public String solve(String rank) {
 
 		double bestScore = Double.NEGATIVE_INFINITY;
 
-		List<String> sample = new ArrayList<>(ROOT_WORDS);
+		List<PedantixWord> sample = new ArrayList<>(ROOT_WORDS.stream().map(PedantixWord::new).toList());
 
-		String bestWord = null;
+		String closestWord = null;
 		
 		Iterator<String> it = ROOT_WORDS.iterator();
-
-		while (bestScore != SCORE_TARGET) {
-			bestWord = getBestWord(sample, targetKey, scoreCache);
-			if (bestWord == null) {
-				bestWord = it.next();
+		
+		while (bestScore != TARGET_SCORE && !sample.isEmpty()) {
+			
+			if (scoreService.getRankWord(rank) != null) {
+				return scoreService.getRankWord(rank);
 			}
-			Double score = scoreCache.get(bestWord);
-			if (score > 0d && targetKey.equals("0")) {
-				System.out.println(targetKey + " => " + bestWord +" => " + score);
+			
+			closestWord = getClosestWord(sample, rank);
+			if (closestWord == null) {
+				closestWord = it.next();
+			}
+			PedantixWord pedantixWord = new PedantixWord(closestWord);
+			Double score = scoreService.getScore(pedantixWord, rank);
+			if (score == TARGET_SCORE) {
+				return pedantixWord.getWord();
 			}
 			if (score > bestScore) {
 				bestScore = score;
 			}
-			List<String> newSsample = lexicalFieldService.getLexicalField(bestWord);
-			if (newSsample.isEmpty()) {
-				sample.remove(bestWord);
+			List<String> newSample = lexicalFieldService.getLexicalField(closestWord);
+			if (newSample.isEmpty()) {
+				sample.remove(new PedantixWord(closestWord));
 			} else {
-				sample = newSsample;
-			}
-			if (bestScore == SCORE_TARGET) {
-				break;
+				sample = new ArrayList<>(newSample.stream().map(PedantixWord::new).toList());
 			}
 		}
 
-		System.err.println(targetKey + " => " + bestWord);
+		return "NOT_FOUND";
+		
+	}	
 
-	}
-
-	public String getBestWord(List<String> sample, String targetKey, Map<String, Double> scoreCache) {
+	public String getClosestWord(List<PedantixWord> sample, String targetKey) {
 
 		Double maxScore = 0d;
 		String bestWord = null;
 
-		for (String word : sample) {
-			if (!scoreCache.containsKey(word)) {
-				double score = scoreService.getScore(word, targetKey, scoreCache);
-				if (score > maxScore) {
-					maxScore = score;
-					bestWord = word;
-				}
-				scoreCache.put(word, score);
+		for (PedantixWord pedantixWord : sample) {
+			double score = scoreService.getScore(pedantixWord, targetKey);
+			if (score > maxScore) {
+				maxScore = score;
+				bestWord = pedantixWord.getWord();
+			}
+			if (score == TARGET_SCORE) {
+				break;
 			}
 		}
-		
 
 		return bestWord;
 	}
