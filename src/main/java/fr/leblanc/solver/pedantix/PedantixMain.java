@@ -14,7 +14,7 @@ public class PedantixMain {
         PedantixSolver pedantixSolver = new PedantixSolver(date);
         ConcurrentHashMap<Integer, String> results = new ConcurrentHashMap<>();
 
-        IntStream.range(0, 100)
+        IntStream.range(0, 10)
                  .parallel()
                  .forEach(i -> {
                      String result = pedantixSolver.solve(Integer.toString(i));
